@@ -2,6 +2,7 @@ import flask
 from flask_cors import CORS
 from flask.json import jsonify
 import logging
+import uuid
 from traffic import City
 
 cityGame = {}
@@ -19,7 +20,7 @@ def hello():
 @app.route("/city", methods=["POST"])
 def create():
     global cityGame
-    id = "12345"
+    id = str(uuid.uuid4())
     cityGame[id] = City()
     currentCars = cityGame[id].getCars()
     currentStreets = cityGame[id].getStreets()
