@@ -65,14 +65,28 @@ class Car(Agent):
         self.speed = speed
         self.old_speed = speed
         self.street = street
+        self.stop = False
+        self.direction = street.direction
+        self.turnAvailable = False
+        self.get_new_turn()
 
-    def changeLane(self, carTurn):
-        self.street = self.street.nextStreet[carTurn]
-    
+    def get_new_turn(self):
+        possibleTurns = []
+        for turn in ["left", "forward", "right"]:
+            if self.street.nextStreet[turn]:
+                possibleTurns.append(turn)
+                
+        self.next_street = random.choice(possibleTurns)
+
+    def change_lane(self):
+        self.street = self.street.nextStreet[self.next_street]
+        self.get_new_turn()
+
     def car_advance(self):
-        self.speed = self.old_speed
-        new_pos = np.array(self.pos) + np.array([0.5, 0.5]) * self.speed
-        self.model.space.move_agent(self, new_pos)
+        if self.stop == False:
+            self.speed = self.old_speed
+            new_pos = np.array(self.pos) + np.array([0.5, 0.5]) * self.speed
+            self.model.space.move_agent(self, new_pos)
 
 
     def step(self):
