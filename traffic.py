@@ -201,9 +201,6 @@ class Car(Agent):
 
             self.car_advance()
 
-        
-
-
 class City(Model):
     def __init__(self):
         super().__init__()
@@ -211,9 +208,14 @@ class City(Model):
         self.schedule = SimultaneousActivation(self)
 
         # Creating streets
-        streets = []        
+        streets = []
+        currentLight = None
         for dataStreet in dataStreets:
-            currentLight  = (TrafficLight(self, dataStreet["light"]["pos"], dataStreet["light"]["state"], dataStreet["light"]["time"]))
+            if dataStreet["light"]["state"] == "White":
+                currentLight = TrafficLight(self, [0, 0], "White", 0, None)
+            else:
+                currentLight = TrafficLight(self, dataStreet["light"]["pos"], dataStreet["light"]["state"], dataStreet["light"]["time"], dataStreet["direction"])
+                
             currentStreet = Street(self, dataStreet["start"], dataStreet["end"], dataStreet["direction"], currentLight)
             
             # traffic_lights.append(currentLight)
@@ -224,8 +226,14 @@ class City(Model):
         
             self.space.place_agent(currentStreet, currentStreet.start)
             self.schedule.add(currentStreet)
-        
-        
+
+        for dataSetStreet in dataSetStreets:
+            s1 = streets[dataSetStreet["info"][0]] if dataSetStreet["info"][0] != None else None 
+            s2 = streets[dataSetStreet["info"][1]] if dataSetStreet["info"][1] != None else None 
+            s3 = streets[dataSetStreet["info"][2]] if dataSetStreet["info"][2] != None else None 
+            streets[dataSetStreet["id"]].setStreet([s1, s2, s3])
+            
+        self.streets = streets
         
         # Creating cars
         for dataCar in dataCars:
@@ -233,11 +241,7 @@ class City(Model):
             self.space.place_agent(currentCar, currentCar.pos)
             self.schedule.add(currentCar)
 
-        for dataSetStreet in dataSetStreets:
-            s1 = streets[dataSetStreet["info"][0]] if dataSetStreet["info"][0] != None else None 
-            s2 = streets[dataSetStreet["info"][1]] if dataSetStreet["info"][1] != None else None 
-            s3 = streets[dataSetStreet["info"][2]] if dataSetStreet["info"][2] != None else None 
-            streets[dataSetStreet["id"]].setStreet([s1, s2, s3])
+        
 
     def step(self):
         self.schedule.step()
@@ -246,7 +250,7 @@ class City(Model):
         cars = []
         for n in self.schedule.agents:
             if isinstance(n, Car):
-                cars.append({"id": n.unique_id, "pos": [n.pos[0], n.pos[1]], "direction": n.street.direction})
+                cars.append({"id": n.unique_id, "pos": [n.pos[0], n.pos[1]], "direction": n.direction})
         return cars
 
     def getStreets(self):
@@ -263,6 +267,6 @@ class City(Model):
     def getTrafficLights(self):
         lights = []
         for n in self.schedule.agents:
-            if isinstance(n, TrafficLight):
-                lights.append({"id": n.unique_id, "pos": [n.pos[0], n.pos[1]], "color": n.state})
+            if isinstance(n, TrafficLight) and n.state != "White":
+                lights.append({"id": n.unique_id, "pos": [n.pos[0], n.pos[1]], "color": n.state, "direction": n.direction})
         return lights
