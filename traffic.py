@@ -21,6 +21,8 @@ class TrafficLight(Agent):
         self.state = state
         self.time = time
         self.direction = direction
+        # self.group = 3    1
+        
 
     def step(self):
         self.time = self.time + 1
@@ -40,6 +42,11 @@ class TrafficLight(Agent):
                 self.time = 0
                 self.state = "Green"
 
+    # Set groups [DEPRECATED]
+    # def set_group(self, n):
+    #     self.group = n
+    
+            
 
 class Street(Agent):
     def __init__(self, model: Model, start, end, direction, traffic_light):
@@ -66,21 +73,32 @@ class Car(Agent):
         self.old_speed = speed
         self.street = street
         self.stop = False
+
         self.direction = street.direction
         self.turnAvailable = False
+
+
         self.get_new_turn()
 
+
     def get_new_turn(self):
+        # possibleTurns =  for street in ["right", "left", "forward"] if self.street.nextStreet[street] != None
+
         possibleTurns = []
+        # for turn in self.street.nextStreet:
         for turn in ["left", "forward", "right"]:
+            # print("T: ", turn)
             if self.street.nextStreet[turn]:
                 possibleTurns.append(turn)
                 
         self.next_street = random.choice(possibleTurns)
 
+
+
     def change_lane(self):
         self.street = self.street.nextStreet[self.next_street]
         self.get_new_turn()
+
 
     def car_advance(self):
         if self.stop == False:
@@ -90,10 +108,17 @@ class Car(Agent):
 
 
     def step(self):
+
+        # print("speed: ", self.speed)
+        # print("direction: ", self.direction)
+        # print("street direction: ", self.street.direction)
+
         traffic_light = self.street.traffic_light
                 
         distance_from_start = reduce(lambda acc, current: acc + current, np.subtract(self.street.start, self.pos))
         distance_from_end = reduce(lambda acc, current: acc + current, np.subtract(self.street.end, self.pos))
+
+
 
         speed_radius = 4.5
         speed = abs(self.speed[0] + (self.speed[1]))
@@ -103,6 +128,10 @@ class Car(Agent):
         elif (1 < speed <= 3): speed_radius = 7
         else: speed_radius = speed + 5
         
+        # speed_radius = reduce(lambda acc, current: acc + current, np.subtract(self.street.end, self.pos))
+        # print(self.unique_id, "   ", speed_radius)
+
+
 
         neighbor_cars = [n for n in self.model.space.get_neighbors(self.pos, radius = speed_radius, include_center = False) if isinstance(n, Car) and n.street == self.street and n != self]
         ahead_cars = [n for n in neighbor_cars if np.less(self.pos, n.pos).any()]
@@ -112,6 +141,11 @@ class Car(Agent):
         if (self.street.direction == "left" or self.street.direction == "down"):
             distance_from_end = -distance_from_end
             ahead_cars = [n for n in neighbor_cars if np.greater(self.pos, n.pos).any()]
+
+        # print("DISTANCIA: ", distance_from_end)
+
+
+
 
         # If within range of traffic light (end of the street)
         # if (2.5 <= distance_from_end <= 7.5):
@@ -134,6 +168,7 @@ class Car(Agent):
             closest_car = min(ahead_cars, key=lambda n:
                 reduce(lambda acc, current: acc + current, abs(np.subtract(self.pos, n.pos))))
 
+            # print("CLOSEST CARS: ", closest_car.unique_id)
             # Check distance with closest_car
             # if closest_car.speed == [0, 0]:
             if closest_car.stop == True:
@@ -145,6 +180,10 @@ class Car(Agent):
                 self.stop = False
                 self.car_advance()
 
+        
+        # if self.next_street == "right":
+            
+
         # MAKING A TURN
         # elif (0 <= distance_from_end <= 3 or 0<=distance_from_start<=3 ):
         elif ((self.next_street == "right" and 1.75 <= distance_from_end <= 3.25) or (self.next_street == "left" and -3.25 <= distance_from_end <= -1.75) or (self.next_street == "forward" and -1.75 <= distance_from_end <= 1.75)):
@@ -154,6 +193,9 @@ class Car(Agent):
             self.car_advance()
             self.change_lane()
             self.direction = self.street.direction
+            # print("NEW STREET: ", self.street.end)
+
+            # print("NEW STREET: ", self.street.start, "-", self.street.end, "  ", self.street.nextStreet)
             
             if(self.street.direction == "left"):
                 self.old_speed = [-1*speed, 0]
@@ -178,28 +220,10 @@ class Car(Agent):
 
 
 
-        # ---- STREET CHANGE ---- 
-        # If going in right direction
-        # print(self.pos, "     ", self.street.start)
-        elif (self.street.direction == "right" or self.street.direction == "up"):
-            if (np.less(self.pos, self.street.start).any() or np.greater_equal(self.pos, self.street.end).all()):
-                print("------------")
-                print("LANE CHANGE")
-                carTurn = "forward"
-                self.changeLane(carTurn)
-                
-            self.car_advance()
-    
-        # If going in "opposite" direction
-        # print(self.pos, "     ", self.street.start)
-        elif (self.street.direction == "left" or self.street.direction == "down"):
-            if (np.greater(self.pos, self.street.start).any() or np.less_equal(self.pos, self.street.end).all()):
-                print("------------")
-                print("LANE CHANGE")
-                carTurn = "forward"
-                self.changeLane(carTurn)
 
-            self.car_advance()
+
+        
+
 
 class City(Model):
     def __init__(self):
@@ -233,6 +257,10 @@ class City(Model):
             s3 = streets[dataSetStreet["info"][2]] if dataSetStreet["info"][2] != None else None 
             streets[dataSetStreet["id"]].setStreet([s1, s2, s3])
             
+            # Set groups [DEPRECATED]
+            # streets[dataSetStreet["id"]].traffic_light.set_group(len([s for s in [s1,s2,s3] if s != None]))
+            # print(len([s for s in [s1,s2,s3] if s != None]))
+
         self.streets = streets
         
         # Creating cars
