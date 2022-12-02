@@ -90,42 +90,41 @@ class Car(Agent):
 
 
     def step(self):
-
         traffic_light = self.street.traffic_light
                 
         distance_from_start = reduce(lambda acc, current: acc + current, np.subtract(self.street.start, self.pos))
         distance_from_end = reduce(lambda acc, current: acc + current, np.subtract(self.street.end, self.pos))
 
-        speed_radius = 3
+        speed_radius = 4.5
         speed = abs(self.speed[0] + (self.speed[1]))
 
-        # FIX: Kinda works?
+        # # FIX: Kinda works
         if (0 <= speed <= 1): speed_radius = 5
         elif (1 < speed <= 3): speed_radius = 7
-        elif (3 < speed <= 5): speed_radius = 9
         else: speed_radius = speed + 5
-        # speed_radius = reduce(lambda acc, current: acc + current, np.subtract(self.street.end, self.pos))
-        # print(self.unique_id, "   ", speed_radius)
-
-
+        
 
         neighbor_cars = [n for n in self.model.space.get_neighbors(self.pos, radius = speed_radius, include_center = False) if isinstance(n, Car) and n.street == self.street and n != self]
         ahead_cars = [n for n in neighbor_cars if np.less(self.pos, n.pos).any()]
+
 
         # If driving in "opposite" direction: Invert the sign & Get cars ahead of me
         if (self.street.direction == "left" or self.street.direction == "down"):
             distance_from_end = -distance_from_end
             ahead_cars = [n for n in neighbor_cars if np.greater(self.pos, n.pos).any()]
 
-
-        # If within range of traffic light
-        if (2.5 <= distance_from_end <= 7.5):
+        # If within range of traffic light (end of the street)
+        # if (2.5 <= distance_from_end <= 7.5):
+        if (7 <= distance_from_end <= 10):
             if (traffic_light.state == "Red"):
                 # print("-------------------")
-                self.speed = [0, 0]
+                self.stop = True
+                # self.speed = [0, 0]
             elif (traffic_light.state == "Green" or traffic_light.state == "Yellow"):
+                self.stop = False
                 self.car_advance()
             else:
+                self.stop = False
                 self.car_advance()
 
 
@@ -135,14 +134,47 @@ class Car(Agent):
             closest_car = min(ahead_cars, key=lambda n:
                 reduce(lambda acc, current: acc + current, abs(np.subtract(self.pos, n.pos))))
 
-            # print("CLOSEST CARS: ", closest_car.unique_id)
             # Check distance with closest_car
-            if closest_car.speed == [0, 0]:
-                self.speed = [0, 0]
+            # if closest_car.speed == [0, 0]:
+            if closest_car.stop == True:
+                # self.speed = [0, 0]
+                self.stop = True
 
             else:
                 self.old_speed = closest_car.speed
+                self.stop = False
                 self.car_advance()
+
+        # MAKING A TURN
+        # elif (0 <= distance_from_end <= 3 or 0<=distance_from_start<=3 ):
+        elif ((self.next_street == "right" and 1.75 <= distance_from_end <= 3.25) or (self.next_street == "left" and -3.25 <= distance_from_end <= -1.75) or (self.next_street == "forward" and -1.75 <= distance_from_end <= 1.75)):
+            # print("TIME TO MAKE A TURN")
+            # print("OLD STREET: ", self.street.end)
+            self.stop = False
+            self.car_advance()
+            self.change_lane()
+            self.direction = self.street.direction
+            
+            if(self.street.direction == "left"):
+                self.old_speed = [-1*speed, 0]
+                self.speed = [-1*speed, 0]
+
+            if(self.street.direction == "right"):
+                self.old_speed = [1*speed, 0]
+                self.speed = [1*speed, 0]
+
+            if(self.street.direction == "up"):
+                self.old_speed = [0, 1*speed]
+                self.speed = [0, 1*speed]
+
+            if(self.street.direction == "down"):
+                self.old_speed = [0, -1*speed]
+                self.speed = [0, -1*speed]
+
+
+        else:
+            self.stop = False
+            self.car_advance()
 
 
 
