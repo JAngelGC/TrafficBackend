@@ -1,5 +1,6 @@
 # Tools
 import numpy as np
+import random
 from functools import reduce
 
 # Mesa framework
@@ -14,27 +15,28 @@ from data import dataSetStreets
 
 
 class TrafficLight(Agent):
-    def __init__(self, model: Model, pos, state, time):
+    def __init__(self, model: Model, pos, state, time, direction):
         super().__init__(model.next_id(), model)
         self.pos = pos
         self.state = state
         self.time = time
+        self.direction = direction
 
     def step(self):
         self.time = self.time + 1
 
         if (self.state == "Green"):
-            if (self.time == 7):
+            if (self.time == 24):
                 self.time = 0
                 self.state = "Yellow"
                 
         if (self.state == "Yellow"):
-            if (self.time == 3):
+            if (self.time == 6):
                 self.time = 0
                 self.state = "Red"
                 
         if (self.state == "Red"):
-            if (self.time == 15):
+            if (self.time == 200):
                 self.time = 0
                 self.state = "Green"
 
