@@ -5,12 +5,15 @@ import logging
 import uuid
 from traffic import City
 
+import os
+
 cityGame = {}
 
-app = flask.Flask(__name__)
+app = flask.Flask(__name__, static_url_path='')
 log = logging.getLogger('werkzeug')
 log.disabled = True
 CORS(app)
+port = int(os.getenv('PORT', 8000))
 
 @app.route('/', methods=["GET"])
 def hello():
@@ -50,4 +53,6 @@ def queryState(id):
 
     return response
 
-app.run()
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=port, debug=True)
